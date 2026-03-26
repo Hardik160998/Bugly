@@ -1,7 +1,7 @@
 (function () {
   const scriptTag = document.currentScript;
   const projectId = scriptTag?.getAttribute('data-project-id') || window.BUGLY_PROJECT_ID;
-  const API_URL = scriptTag?.getAttribute('data-api-url') || window.BUGLY_API_URL || 'http://localhost:5000/api';
+  const API_URL = scriptTag?.getAttribute('data-api-url') || window.BUGLY_API_URL || 'https://bugly-backend.vercel.app/api';
   const pos = (scriptTag?.getAttribute('data-position') || 'bottom-right').toLowerCase();
 
   const isBottom = pos.includes('bottom');

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from './store';
 
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+    baseURL: process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? 'https://bugly-backend.vercel.app/api' : 'http://localhost:5000/api'),
 });
 
 api.interceptors.request.use((config) => {

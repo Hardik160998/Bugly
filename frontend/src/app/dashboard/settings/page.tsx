@@ -18,7 +18,7 @@ export default function SettingsPage() {
   const [widgetPosition, setWidgetPosition] = useState('bottom-right');
   const [copied, setCopied] = useState(false);
 
-  const apiUrl = mounted ? `${window.location.origin.replace('3000', '5000')}/api` : 'http://localhost:5000/api';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? 'https://bugly-backend.vercel.app/api' : (mounted ? `${window.location.origin.replace('3000', '5000')}/api` : 'http://localhost:5000/api'));
   const snippet = `<script\n  src="${mounted ? window.location.origin : 'http://localhost:3000'}/widget.js"\n  data-project-id="${snippetProjectId.trim() || 'YOUR_PROJECT_ID'}"\n  data-api-url="${apiUrl}"\n  data-position="${widgetPosition}"\n></script>`;
 
   useEffect(() => {
