@@ -135,7 +135,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           </button>
 
           {open && (
-            <div className="absolute right-0 top-10 z-50 w-[calc(100vw-2rem)] max-w-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl">
+            <div className="fixed left-4 right-4 top-20 sm:absolute sm:inset-auto sm:right-0 sm:top-12 z-50 sm:w-96 max-w-sm sm:max-w-none mx-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl sm:origin-top-right animate-in fade-in zoom-in-95 duration-200">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">Open Bugs</span>
                 <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
@@ -145,7 +145,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
               <div className="max-h-72 overflow-y-auto">
                 {loading ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 ms-5">Loading...</p>
                 ) : notifications.length === 0 ? (
                   <div className="flex flex-col items-center py-8 text-gray-400">
                     <Bug className="h-8 w-8 mb-2" />

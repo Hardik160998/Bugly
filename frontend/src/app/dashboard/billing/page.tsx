@@ -250,7 +250,7 @@ export default function BillingPage() {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800/60 p-6 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
-                <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
+                <div className={`h-12 w-12 rounded-xl flex items-center justify-center dark:bg-gray-800 ${
                   currentPlan === 'free' ? 'bg-gray-100 text-gray-600' : 'bg-blue-100 text-blue-600'
                 }`}>
                   <Zap className="h-6 w-6" />
@@ -294,7 +294,7 @@ export default function BillingPage() {
               return (
                 <div
                   key={plan.id}
-                  className={`relative rounded-2xl p-6 flex flex-col ${
+                  className={`relative rounded-2xl p-6 flex flex-col  ${
                     plan.highlight
                       ? 'ring-2 ring-blue-600 bg-white dark:bg-gray-900 shadow-lg'
                       : 'border border-gray-100 dark:border-gray-800/60 bg-white dark:bg-gray-900'

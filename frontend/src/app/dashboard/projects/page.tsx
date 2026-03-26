@@ -267,7 +267,7 @@ export default function ProjectsPage() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 ring-2 ring-blue-100">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 ring-2 ring-blue-100 dark:bg-gray-800 dark:ring-gray-700">
                     <FolderKanban className="h-5 w-5" />
                   </div>
                   <div>
@@ -337,17 +337,17 @@ export default function ProjectsPage() {
               <div className="mt-6 flex items-center justify-between text-sm">
                 <div className="flex items-center gap-1.5">
                   {project._count?.bugs === 0 ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200 dark:bg-gray-800">
                       <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
                       All clear
                     </span>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                      <span className="text-sm text-gray-600 dark:text-gray-400 ">
                         <span className="font-semibold text-gray-900 dark:text-white">{project._count?.bugs}</span> total
                       </span>
                       {project._openCount > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200 dark:bg-gray-800">
                           <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                           {project._openCount} open
                         </span>
@@ -430,7 +430,7 @@ export default function ProjectsPage() {
             <div>
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Members with access</p>
               {membersLoading ? (
-                <p className="text-sm text-gray-400">Loading...</p>
+                <p className="text-sm text-gray-400 ms-5">Loading...</p>
               ) : members.length === 0 ? (
                 <p className="text-sm text-gray-400">No members yet. Invite someone above.</p>
               ) : (

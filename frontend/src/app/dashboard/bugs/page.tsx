@@ -41,6 +41,7 @@ export default function BugsPage() {
   const [search, setSearch] = useState('');
   const [plan, setPlan] = useState<any>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -57,7 +58,7 @@ export default function BugsPage() {
       const fromQuery = searchParams.get('project');
       const match = pRes.data.find((p: Project) => p.id === fromQuery);
       setSelectedProjectId(match ? match.id : pRes.data[0]?.id ?? '');
-    }).catch(console.error);
+    }).catch(console.error).finally(() => setIsInitializing(false));
   }, []);
 
   useEffect(() => {
@@ -92,9 +93,11 @@ export default function BugsPage() {
         <StyledSelect
           value={selectedProjectId}
           onChange={val => { setSelectedProjectId(val); setActiveStatus('Open'); setSearch(''); }}
-          options={projects.length === 0
-            ? [{ value: '', label: 'No projects' }]
-            : projects.map(p => ({ value: p.id, label: p.name }))
+          options={isInitializing
+            ? [{ value: '', label: 'Loading projects...' }]
+            : projects.length === 0
+              ? [{ value: '', label: 'No projects' }]
+              : projects.map(p => ({ value: p.id, label: p.name }))
           }
           className="w-full sm:w-auto"
         />

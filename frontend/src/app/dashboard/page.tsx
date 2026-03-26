@@ -38,6 +38,16 @@ const STATUS_COLORS: Record<string, string> = {
   'closed':      'bg-gray-50 text-gray-600 ring-gray-500/10',
 };
 
+function timeAgo(dateString: string) {
+  const diffInSeconds = Math.floor((new Date().getTime() - new Date(dateString).getTime()) / 1000);
+  if (diffInSeconds < 60) return 'just now';
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}h ago`;
+  return `${Math.floor(diffInHours / 24)}d ago`;
+}
+
 export default function DashboardHome() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
@@ -86,18 +96,18 @@ export default function DashboardHome() {
   return (
     <div className="space-y-8 pb-8">
       {/* Stat cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {statCards.map((stat) => (
-          <div key={stat.name} className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/60 p-6 flex flex-col h-32 justify-between group hover:shadow-md transition-all">
+          <div key={stat.name} className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/60 p-4 flex flex-col h-32 sm:h-32 justify-between group hover:shadow-md transition-all">
             <div className="flex items-start justify-between">
-              <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color}`}>
+              <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} dark:bg-gray-800`}>
                 <stat.icon className="h-6 w-6" />
               </div>
             </div>
             
             <div>
-              <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{stat.name}</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white leading-none">{stat.value}</p>
+              <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-2">{stat.name}</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white leading-none mb-4">{stat.value}</p>
             </div>
           </div>
         ))}
@@ -113,55 +123,63 @@ export default function DashboardHome() {
             </Link>
           </div>
           
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50/50 dark:bg-gray-800/30">
-                  <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Incident</th>
-                  <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Project</th>
-                  <th className="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date</th>
-                  <th className="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                {!stats?.recentBugs.length ? (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-gray-500 italic text-sm">No bug reports yet.</td>
-                  </tr>
-                ) : (
-                  stats.recentBugs.map((bug: RecentBug) => (
-                    <tr key={bug.id} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/5 transition-colors group cursor-pointer" onClick={() => router.push(`/dashboard/bugs/${bug.id}`)}>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                            bug.status.toLowerCase() === 'resolved' ? 'bg-emerald-500' : 
-                            bug.status.toLowerCase() === 'open' ? 'bg-rose-500' : 'bg-indigo-500'
-                          }`} />
-                          <div>
-                            <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{bug.id.substring(0, 8).toUpperCase()}: {bug.title}</p>
-                            <p className="text-xs text-gray-400 mt-0.5 mt-0.5">Reported by platform</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {bug.project.name}
-                      </td>
-                      <td className="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(bug.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight ${
-                          bug.status.toLowerCase() === 'resolved' ? 'bg-emerald-100 text-emerald-700' : 
-                          bug.status.toLowerCase() === 'open' ? 'bg-rose-100 text-rose-700' : 'bg-purple-100 text-purple-700'
-                        }`}>
-                          {bug.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="mt-3 mb-3 flex flex-col gap-4">
+            {!stats?.recentBugs.length ? (
+              <p className="text-center py-12 text-gray-500 italic text-sm">No bug reports yet.</p>
+            ) : (
+              stats.recentBugs.map((bug: RecentBug) => {
+                const status = bug.status.toLowerCase();
+                const isResolved = status === 'resolved' || status === 'closed';
+                const isOpen = status === 'open';
+                
+                const dotColor = isResolved ? 'bg-emerald-500' : isOpen ? 'bg-rose-600' : 'bg-indigo-500';
+                const pillColor = isResolved ? 'bg-emerald-100 text-emerald-700' : isOpen ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700';
+                const textColor = isResolved ? 'text-emerald-600' : isOpen ? 'text-rose-600' : 'text-indigo-600';
+                
+                return (
+                  <div 
+                    key={bug.id} 
+                    onClick={() => router.push(`/dashboard/bugs/${bug.id}`)} 
+                    className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-200 dark:border-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer flex flex-col group mx-3"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-2.5 w-2.5 rounded-full ${dotColor}`} />
+                        <span className="font-bold text-gray-900 dark:text-white text-base tracking-tight">{bug.id.substring(0, 8).toUpperCase()}</span>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${pillColor}`}>
+                        {bug.status}
+                      </span>
+                    </div>
+
+                    {/* Body with vertical line */}
+                    <div className="relative pl-5 ml-[4.5px] border-l-2 border-gray-100 dark:border-gray-800/60 my-4 space-y-3">
+                      <div className="flex items-start">
+                        <span className="w-20 shrink-0 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Source:</span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{bug.project.name}</span>
+                      </div>
+                      <div className="flex items-start">
+                        <span className="w-20 shrink-0 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Trigger:</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{bug.title || "Reported by platform"}</span>
+                      </div>
+                    </div>
+
+                    <hr className="border-gray-100 dark:border-gray-800/60 mb-4" />
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-400 dark:text-gray-500">
+                        Updated {timeAgo(bug.createdAt)}
+                      </span>
+                      <span className={`text-[11px] font-bold uppercase tracking-widest flex items-center gap-1 dark:text-gray-400`}>
+                        Details <ArrowRight className="h-3.5 w-3.5 transform group-hover:translate-x-1 transition-transform" />
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
