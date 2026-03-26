@@ -11,9 +11,16 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const dashboardCors = cors({
-    origin: process.env.FRONTEND_URL || 'https://bugly-frontend.vercel.app',
-    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: function (origin, callback) {
+        if (!origin || origin.includes('bugly-frontend') || origin.includes('localhost')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    credentials: true,
 });
 
 const widgetCors = cors({
