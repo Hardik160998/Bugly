@@ -33,7 +33,7 @@ exports.register = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: error.message || 'Internal server error' });
     }
 };
 
@@ -60,7 +60,7 @@ exports.login = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: error.message || 'Internal server error' });
     }
 };
 
@@ -85,7 +85,7 @@ exports.updateProfile = async (req, res) => {
         res.json({ user });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Failed to update profile' });
+        res.status(500).json({ error: error.message || 'Failed to update profile' });
     }
 };
 
