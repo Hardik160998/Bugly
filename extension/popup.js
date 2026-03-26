@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const hintEl       = document.getElementById('annotation-hint');
     const clearBtn     = document.getElementById('clear-btn');
 
-    const API_URL = 'http://localhost:5000/api';
+    const API_URL = 'https://bugly-backend.vercel.app/api';
 
     let captureDataUrl = null;   // original screenshot
     let baseImage      = null;   // Image object
