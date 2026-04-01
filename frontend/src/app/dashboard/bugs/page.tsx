@@ -8,7 +8,15 @@ import { useSearchParams } from 'next/navigation';
 import { BugListShimmer } from '@/components/ui/Shimmer';
 import StyledSelect from '@/components/ui/StyledSelect';
 import UpgradeModal from '@/components/ui/UpgradeModal';
-import { Zap, AlertTriangle, Calendar, Search, Clock, Bug } from 'lucide-react';
+import { 
+  Zap, 
+  AlertTriangle, 
+  Calendar, 
+  Search, 
+  Clock, 
+  Bug, 
+  ArrowRight 
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 
@@ -18,18 +26,10 @@ interface BugReport { id: string; title: string; status: string; createdAt: stri
 const STATUSES = ['All', 'Open', 'In Progress', 'Resolved', 'Closed'];
 
 const STATUS_STYLES: Record<string, string> = {
-  'Open': 'bg-amber-50 text-amber-700 ring-amber-600/20',
-  'In Progress': 'bg-blue-50 text-blue-700 ring-blue-600/20',
-  'Resolved': 'bg-green-50 text-green-700 ring-green-600/20',
-  'Closed': 'bg-gray-50 text-gray-600 ring-gray-500/10',
-};
-
-const TAB_ACTIVE: Record<string, string> = {
-  'All': 'border-blue-600 text-blue-600',
-  'Open': 'border-amber-500 text-amber-600',
-  'In Progress': 'border-blue-500 text-blue-600',
-  'Resolved': 'border-green-500 text-green-600',
-  'Closed': 'border-gray-400 text-gray-600',
+  'Open': 'bg-rose-50 border-rose-100 text-rose-600 dark:bg-rose-900/20 dark:border-rose-900/30',
+  'In Progress': 'bg-brand-50 border-brand-100 text-brand-600 dark:bg-brand-900/20 dark:border-brand-900/30',
+  'Resolved': 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-900/20 dark:border-emerald-900/30',
+  'Closed': 'bg-gray-50 border-gray-100 text-gray-500 dark:bg-gray-900/20 dark:border-gray-800/60',
 };
 
 export default function BugsPage() {
@@ -78,8 +78,6 @@ export default function BugsPage() {
     queryFn: async () => {
       if (!selectedProjectId) return { bugs: [] };
       const res = await api.get(`/projects/${selectedProjectId}/bugs`);
-      // Since backend is now paginated, but frontend isn't fully ready for it, 
-      // handle either array or paginated object for compatibility
       return Array.isArray(res.data) ? { bugs: res.data } : res.data;
     },
     enabled: !!selectedProjectId,
@@ -100,13 +98,28 @@ export default function BugsPage() {
     return matchStatus && matchSearch;
   }), [bugs, activeStatus, debouncedSearch]);
 
+  const timeAgo = (date: string) => {
+      const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+      let interval = seconds / 31536000;
+      if (interval > 1) return Math.floor(interval) + "y";
+      interval = seconds / 2592000;
+      if (interval > 1) return Math.floor(interval) + "mo";
+      interval = seconds / 86400;
+      if (interval > 1) return Math.floor(interval) + "d";
+      interval = seconds / 3600;
+      if (interval > 1) return Math.floor(interval) + "h";
+      interval = seconds / 60;
+      if (interval > 1) return Math.floor(interval) + "m";
+      return Math.floor(seconds) + "s";
+  };
+
   return (
-    <div className="space-y-6 flex flex-col h-full">
+    <div className="space-y-10 flex flex-col h-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Bugs & Feedback</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Track, manage, and resolve user reports.</p>
+          <h2 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">Monitoring</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Real-time bug logs and user feedback.</p>
         </div>
         <StyledSelect
           value={selectedProjectId}
@@ -114,155 +127,116 @@ export default function BugsPage() {
           options={isInitializing
             ? [{ value: '', label: 'Loading projects...' }]
             : projects.length === 0
-              ? [{ value: '', label: 'No projects' }]
+              ? [{ value: '', label: 'No active projects' }]
               : projects.map((p: Project) => ({ value: p.id, label: p.name }))
           }
-          className="w-full sm:w-auto"
+          className="w-full sm:w-64"
         />
       </div>
 
       {/* Trial Banner */}
       {plan && !plan.trial.isExpired && plan.name === 'free' && plan.trial.daysRemaining <= 3 && (
-        <div className="flex items-center justify-between gap-4 rounded-xl bg-blue-600 p-4 text-white shadow-lg shadow-blue-600/20">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-white/20 p-2">
-              <Calendar className="h-4 w-4" />
+         <div className="rounded-3xl bg-brand-600 p-6 text-white shadow-xl shadow-brand-600/20 flex items-center justify-between gap-4 relative overflow-hidden group">
+            <div className="flex items-center gap-4 relative z-10">
+                <div className="rounded-2xl bg-white/20 p-3 backdrop-blur-sm">
+                    <Calendar className="h-6 w-6" />
+                </div>
+                <div>
+                    <p className="text-lg font-bold">Trial ending soon</p>
+                    <p className="text-sm opacity-90">Upgrade for continued premium monitoring.</p>
+                </div>
             </div>
-            <div>
-              <p className="text-sm font-bold">Trial Ending Soon!</p>
-              <p className="text-xs text-blue-100">You have {plan.trial.daysRemaining} days left in your free trial. Upgrade now to avoid any interruption.</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => router.push('/dashboard/billing')}
-            className="rounded-lg bg-white px-4 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors"
-          >
-            Upgrade Now
-          </button>
-        </div>
+            <button onClick={() => router.push('/dashboard/billing')} className="relative z-10 bg-white text-brand-600 px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-50 transition-all shadow-lg">Upgrade</button>
+         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm ring-1 ring-gray-100 dark:ring-gray-800/60 flex-1 flex flex-col overflow-hidden">
-        {/* Plan Limit Banner */}
-        {!loading && plan && plan.limits.maxBugsPerMonth !== Infinity && bugs.length >= plan.limits.maxBugsPerMonth && (
-          <div className="mx-4 mt-4 sm:mx-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white dark:bg-gray-950 rounded-lg shadow-sm">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Bug Report Limit Reached</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  This project has reached its monthly limit of {plan.limits.maxBugsPerMonth} reports. Upgrade to keep receiving feedback.
-                </p>
-              </div>
+      <div className="bg-white dark:bg-gray-950 rounded-3xl shadow-premium border border-gray-100 dark:border-gray-800/60 flex-1 flex flex-col overflow-hidden">
+        {/* Search & Tabs Segment */}
+        <div className="px-8 pt-8 border-b border-gray-50 dark:border-gray-800/60 bg-white/50 dark:bg-gray-950/50 backdrop-blur-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6">
+            <div className="relative w-full max-w-md">
+                <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Filter incidents..."
+                    className="block w-full rounded-2xl border-0 py-3 pl-12 pr-4 text-gray-900 dark:text-white bg-gray-50/50 dark:bg-gray-900/50 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-500 sm:text-xs font-medium transition-all"
+                />
             </div>
-            <button 
-              onClick={() => setShowUpgradeModal(true)}
-              className="px-3 py-1.5 bg-amber-500 text-white text-xs font-bold rounded-lg hover:bg-amber-600 transition-colors shadow-sm"
-            >
-              Upgrade Now
-            </button>
-          </div>
-        )}
-
-        {/* Search */}
-        <div className="px-4 pt-4 pb-0 sm:px-6">
-          <div className="relative max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search bugs..."
-              className="block w-full rounded-md border-0 py-1.5 pl-10 pr-3 text-gray-900 dark:text-white dark:bg-gray-800 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm"
-            />
+            
+            <div className="flex items-center gap-1.5 p-1 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl border border-gray-100/50 dark:border-gray-800/50">
+                {STATUSES.map(s => (
+                    <button
+                        key={s}
+                        onClick={() => setActiveStatus(s)}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                            activeStatus === s 
+                                ? 'bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-400 shadow-sm ring-1 ring-gray-100 dark:ring-gray-700/50' 
+                                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                        }`}
+                    >
+                        {s} <span className="ml-1 opacity-50">{counts[s] ?? 0}</span>
+                    </button>
+                ))}
+            </div>
           </div>
         </div>
 
-        {/* Status tabs */}
-        <div className="flex gap-0 border-b border-gray-200 dark:border-gray-800 mt-3 px-4 sm:px-6 overflow-x-auto">
-          {STATUSES.map(s => (
-            <button
-              key={s}
-              onClick={() => setActiveStatus(s)}
-              className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                activeStatus === s
-                  ? TAB_ACTIVE[s]
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300'
-              }`}
-            >
-              {s}
-              <span className={`rounded-full px-1.5 py-0.5 text-xs font-semibold ${
-                activeStatus === s ? 'bg-current/10' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-              }`}>
-                {counts[s] ?? 0}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* List */}
+        {/* List Section */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <BugListShimmer />
           ) : bugs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center h-full">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-50 dark:bg-green-900/20 mb-4">
-                <Bug className="h-8 w-8 text-green-400" />
+            <div className="flex flex-col items-center justify-center p-20 text-center h-full">
+              <div className="h-20 w-20 rounded-3xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-6 border border-emerald-100 dark:border-emerald-900/40">
+                <Bug className="h-10 w-10 text-emerald-400" />
               </div>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white">No bugs reported yet</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-                {projects.find((p: Project) => p.id === selectedProjectId)?.name ?? 'This project'} is all clear.
-                Install the widget on your site to start collecting bug reports.
-              </p>
-              <Link
-                href="/dashboard/settings"
-                className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
-              >
-                Get widget snippet
-              </Link>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight text-emerald-600">Zero active incidents</h3>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 font-medium max-w-sm">No bugs reported yet for this environment. Your system appears healthy.</p>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center h-full">
-              <Bug className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-white">No bugs found</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {search ? 'No bugs match your search.' : `No ${activeStatus === 'All' ? '' : activeStatus.toLowerCase() + ' '}bugs for this project.`}
-              </p>
+            <div className="flex flex-col items-center justify-center p-20 text-center h-full opacity-40">
+              <Bug className="h-16 w-16 text-gray-300 dark:text-gray-700 mb-6" />
+              <h3 className="text-lg font-bold">No results found</h3>
+              <p className="text-sm font-medium">Try adjusting your filters or search terms.</p>
             </div>
           ) : (
-            <ul role="list" className="divide-y divide-gray-100 dark:divide-gray-800">
+            <ul className="divide-y divide-gray-50 dark:divide-gray-800/60">
               {filtered.map((bug: BugReport) => (
-                <li key={bug.id} className="relative flex justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 dark:hover:bg-gray-800/50 sm:px-6 transition-colors cursor-pointer">
-                  <div className="flex min-w-0 gap-x-4 items-center">
-                    <div className="h-10 w-10 flex-none rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-                      <Bug className="h-5 w-5 text-red-600" />
+                <li 
+                  key={bug.id} 
+                  onClick={() => router.push(`/dashboard/bugs/${bug.id}`)}
+                  className="group relative flex items-center justify-between gap-x-6 px-10 py-6 hover:bg-gray-50/50 dark:hover:bg-brand-900/5 transition-all cursor-pointer"
+                >
+                  <div className="flex min-w-0 gap-x-5 items-center">
+                    <div className="h-12 w-12 shrink-0 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center group-hover:border-brand-200 dark:group-hover:border-brand-800 transition-colors">
+                      <Bug className="h-6 w-6 text-rose-500 group-hover:scale-110 transition-transform duration-500" />
                     </div>
-                    <div className="min-w-0 flex-auto">
-                      <p className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
-                        <Link href={`/dashboard/bugs/${bug.id}`}>
-                          <span className="absolute inset-x-0 -top-px bottom-0" />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <p className="text-base font-bold text-gray-900 dark:text-white truncate lg:max-w-xl group-hover:text-brand-600 transition-colors">
                           {bug.title}
-                        </Link>
-                      </p>
-                      <p className="mt-1 flex text-xs leading-5 text-gray-500 dark:text-gray-400 gap-2 items-center">
-                        <span>{bug.browser || 'Unknown Browser'}</span>
-                        <span>&middot;</span>
-                        <span>{bug.os || 'Unknown OS'}</span>
-                      </p>
+                        </p>
+                        <span className="text-[10px] font-bold text-gray-300 dark:text-gray-700 uppercase tracking-widest">
+                            {bug.id.slice(0, 8)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5"><Zap className="h-3 w-3" /> {bug.browser || 'Generic'}</span>
+                        <span className="h-1 w-1 rounded-full bg-gray-200 dark:bg-gray-800" />
+                        <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {timeAgo(bug.createdAt)} ago</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-x-4">
-                    <div className="hidden sm:flex sm:flex-col sm:items-end">
-                      <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${STATUS_STYLES[bug.status] || 'bg-gray-50 text-gray-600 ring-gray-500/10'}`}>
+                  
+                  <div className="flex items-center gap-8">
+                     <span className={`px-4 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border transition-all ${STATUS_STYLES[bug.status] || 'bg-gray-50 border-gray-100 text-gray-500'}`}>
                         {bug.status}
                       </span>
-                      <p className="mt-1 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                        <Clock className="h-3 w-3" />
-                        {new Date(bug.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
+                      <div className="h-10 w-10 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-300 group-hover:text-brand-600 group-hover:bg-brand-50 dark:group-hover:bg-brand-900/20 transition-all hidden sm:flex">
+                        <ArrowRight className="h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
+                      </div>
                   </div>
                 </li>
               ))}
@@ -275,8 +249,8 @@ export default function BugsPage() {
         isOpen={showUpgradeModal} 
         onClose={() => setShowUpgradeModal(false)}
         isExpired={plan?.trial.isExpired}
-        title="Bug Report Limit Reached"
-        description={`Your current ${plan?.name} plan is capped at ${plan?.limits.maxBugsPerMonth} reports per month. Upgrade to Pro for unlimited bug reports and advanced features!`}
+        title="Limit Reached"
+        description={`Your current ${plan?.name} plan highlights essential logs. Upgrade to Unlock full monitoring capabilities and history.`}
       />
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, Bug, LogOut, X, Menu, Sun, Moon, Search, ChevronDown } from 'lucide-react';
+import { Bell, Bug, LogOut, X, Menu, Sun, Moon, Search, ChevronDown, CheckCircle, UserCircle } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuthStore, useNotifStore, useThemeStore } from '@/lib/store';
@@ -89,12 +89,12 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   };
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-gray-100 dark:border-gray-800/60 bg-white dark:bg-gray-900 px-4 sm:px-6 lg:px-8">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-100 dark:border-gray-800/60 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md sticky top-0 z-20 px-4 sm:px-6 lg:px-8">
       <div className="flex items-center flex-1 gap-4">
         {/* Hamburger — mobile only */}
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="lg:hidden p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -105,8 +105,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           </div>
           <input
             type="text"
-            placeholder="Search incidents, projects, or users..."
-            className="block w-full rounded-xl border-0 py-2.5 pl-11 pr-3 text-gray-900 dark:text-white bg-gray-50/50 dark:bg-gray-800/50 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm transition-all"
+            placeholder="Search dashboard..."
+            className="block w-full rounded-2xl border-0 py-2.5 pl-11 pr-3 text-gray-900 dark:text-white bg-gray-50/50 dark:bg-gray-900/50 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-500 sm:text-xs font-medium transition-all"
           />
         </div>
       </div>
@@ -115,7 +115,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="rounded-xl p-2.5 text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 hover:text-brand-600 transition-all"
           title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -125,48 +125,50 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         <div className="relative" ref={ref}>
           <button
             onClick={() => setOpen(o => !o)}
-            className="relative rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="relative rounded-xl p-2.5 text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 hover:text-brand-600 transition-all"
           >
             {newCount > 0 && (
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
+              <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-brand-600 ring-2 ring-white dark:ring-gray-950" />
             )}
             <span className="sr-only">Notifications</span>
             <Bell className="h-5 w-5" />
           </button>
 
           {open && (
-            <div className="fixed left-4 right-4 top-20 sm:absolute sm:inset-auto sm:right-0 sm:top-12 z-50 sm:w-96 max-w-sm sm:max-w-none mx-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl sm:origin-top-right animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">Open Bugs</span>
+            <div className="fixed left-4 right-4 top-20 sm:absolute sm:inset-auto sm:right-0 sm:top-14 z-50 sm:w-96 max-w-sm sm:max-w-none mx-auto rounded-3xl border border-gray-100 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-2xl sm:origin-top-right animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50 dark:border-gray-800/60">
+                <span className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-widest">Alerts</span>
                 <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
-              <div className="max-h-72 overflow-y-auto">
+              <div className="max-h-80 overflow-y-auto">
                 {loading ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 ms-5">Loading...</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 p-8 text-center font-bold animate-pulse">Checking...</p>
                 ) : notifications.length === 0 ? (
-                  <div className="flex flex-col items-center py-8 text-gray-400">
-                    <Bug className="h-8 w-8 mb-2" />
-                    <p className="text-sm">No open bugs — all clear!</p>
+                  <div className="flex flex-col items-center py-12 text-gray-400 bg-gray-50/30 dark:bg-gray-900/30">
+                    <div className="h-12 w-12 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center mb-3 shadow-sm">
+                        <CheckCircle className="h-6 w-6 text-emerald-500" />
+                    </div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Inbox Clear</p>
                   </div>
                 ) : (
-                  <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+                  <ul className="divide-y divide-gray-50 dark:divide-gray-800/50">
                     {notifications.map(n => (
                       <li key={n.id}>
                         <Link
                           href={`/dashboard/bugs/${n.id}`}
                           onClick={() => setOpen(false)}
-                          className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          className="flex items-start gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group"
                         >
-                          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/30">
-                            <Bug className="h-4 w-4 text-red-500" />
+                          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30">
+                            <Bug className="h-4 w-4 text-rose-500" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{n.title}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                              {n.project.name} · {new Date(n.createdAt).toLocaleDateString()}
+                            <p className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-brand-600 transition-colors">{n.title}</p>
+                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-1 uppercase tracking-widest">
+                              {n.project.name} • {new Date(n.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                         </Link>
@@ -176,13 +178,13 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 )}
               </div>
 
-              <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-2">
+              <div className="border-t border-gray-50 dark:border-gray-800/60 p-4 bg-gray-50/50 dark:bg-gray-900/50">
                 <Link
                   href="/dashboard/bugs"
                   onClick={() => setOpen(false)}
-                  className="block text-center text-xs font-medium text-blue-600 hover:underline py-1"
+                  className="block text-center text-[10px] font-bold text-brand-600 hover:text-brand-700 uppercase tracking-widest transition-colors"
                 >
-                  View all bugs
+                  See all background reports
                 </Link>
               </div>
             </div>
@@ -193,38 +195,41 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => setProfileOpen(!profileOpen)}
-            className="flex items-center gap-3 rounded-xl p-1 pr-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-800"
+            className="flex items-center gap-2 rounded-2xl p-1 pr-3 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-800"
           >
-            <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center overflow-hidden border border-white dark:border-gray-700 shadow-sm">
-              <img src={`https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=DBEAFE&color=2563EB&bold=true`} alt="avatar" />
+            <div className="h-9 w-9 rounded-xl overflow-hidden border-2 border-white dark:border-gray-700 shadow-premium group-hover:scale-105 transition-transform">
+              <img src={`https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=3758ff&color=ffffff&bold=true`} alt="avatar" />
             </div>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{user?.name || 'User'}</p>
+            <div className="hidden md:block text-left ml-1">
+              <p className="text-xs font-bold text-gray-900 dark:text-white leading-none mb-0.5">{user?.name || 'User'}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{user?.plan || 'Free'}</p>
             </div>
-            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {profileOpen && (
-            <div className="absolute right-0 top-12 z-50 w-48 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100">
-              <div className="px-4 py-2 border-b border-gray-50 dark:border-gray-800">
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Account</p>
+            <div className="absolute right-0 top-14 z-50 w-56 rounded-3xl border border-gray-100 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-2xl py-2 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-50 dark:border-gray-800/50">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Connected as</p>
                 <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user?.email}</p>
               </div>
-              <Link
-                href="/dashboard/profile"
-                onClick={() => setProfileOpen(false)}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                <Search className="h-4 w-4" /> {/* Use Profile icon if available, or just keeping it simple */}
-                Profile Settings
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-left"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign out
-              </button>
+              <div className="p-2">
+                <Link
+                  href="/dashboard/profile"
+                  onClick={() => setProfileOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-brand-900/20 hover:text-brand-600 dark:hover:text-brand-400 rounded-2xl transition-all"
+                >
+                  <UserCircle className="h-4 w-4" />
+                  Personal Profile
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-2xl transition-all text-left mt-1"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Terminate Session
+                </button>
+              </div>
             </div>
           )}
         </div>
