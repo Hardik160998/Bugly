@@ -6,33 +6,65 @@ export function Shimmer({ className }: { className?: string }) {
 
 export function DashboardShimmer() {
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-10">
+      {/* Stat Cards Shimmer */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="rounded-xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 p-5 flex items-center gap-4">
-            <Shimmer className="h-12 w-12 rounded-lg shrink-0" />
-            <div className="flex-1 space-y-2">
-              <Shimmer className="h-3 w-20" />
-              <Shimmer className="h-6 w-10" />
+          <div key={i} className="rounded-2xl bg-white dark:bg-gray-950 border border-gray-100 dark:border-gray-800/60 p-5 flex items-center gap-4 shadow-sm">
+            <Shimmer className="h-12 w-12 rounded-xl shrink-0" />
+            <div className="space-y-2 flex-1">
+              <Shimmer className="h-2 w-12" />
+              <Shimmer className="h-6 w-16" />
             </div>
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {[...Array(2)].map((_, i) => (
-          <div key={i} className="rounded-xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 p-6 space-y-4">
-            <Shimmer className="h-5 w-32" />
-            {[...Array(4)].map((_, j) => (
-              <div key={j} className="flex items-center justify-between py-2">
-                <div className="space-y-1.5 flex-1">
-                  <Shimmer className="h-3.5 w-48" />
-                  <Shimmer className="h-3 w-28" />
+
+      {/* Main Content Shimmer */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8 bg-white dark:bg-gray-950 rounded-3xl border border-gray-100 dark:border-gray-800/60 shadow-sm overflow-hidden">
+          <div className="px-8 py-6 border-b border-gray-50 dark:border-gray-800/60 flex items-center justify-between">
+            <div className="space-y-2">
+              <Shimmer className="h-5 w-32" />
+              <Shimmer className="h-3 w-48" />
+            </div>
+            <Shimmer className="h-8 w-20 rounded-xl" />
+          </div>
+          <div className="divide-y divide-gray-50 dark:divide-gray-800/60">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="px-8 py-5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4 flex-1">
+                  <Shimmer className="h-10 w-10 rounded-xl shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <Shimmer className="h-4 w-1/3" />
+                    <Shimmer className="h-3 w-1/4" />
+                  </div>
                 </div>
-                <Shimmer className="h-6 w-16 rounded-full ml-4" />
+                <Shimmer className="h-6 w-16 rounded-lg" />
               </div>
             ))}
           </div>
-        ))}
+        </div>
+
+        <div className="lg:col-span-4 space-y-6">
+          <div className="bg-white dark:bg-gray-950 rounded-3xl border border-gray-100 dark:border-gray-800/60 shadow-sm p-8">
+            <Shimmer className="h-5 w-32 mb-8" />
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-4 border border-gray-50 dark:border-gray-800 rounded-2xl">
+                  <div className="flex items-center gap-4 flex-1">
+                    <Shimmer className="h-10 w-10 rounded-xl shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <Shimmer className="h-4 w-2/3" />
+                      <Shimmer className="h-2 w-1/2" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <Shimmer className="h-48 w-full rounded-3xl" />
+        </div>
       </div>
     </div>
   );
