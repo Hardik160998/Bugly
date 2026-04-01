@@ -1,8 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
 
@@ -14,14 +13,18 @@ exports.register = async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        const existingUser = await prisma.user.findUnique({ 
+            where: { email },
+            select: { id: true }
+        });
         if (existingUser) {
             return res.status(400).json({ error: 'Email already in use' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await prisma.user.create({
-            data: { email, name, password: hashedPassword }
+            data: { email, name, password: hashedPassword },
+            select: { id: true, name: true, email: true }
         });
 
         const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
@@ -29,7 +32,7 @@ exports.register = async (req, res) => {
         res.status(201).json({
             message: 'User registered successfully',
             token,
-            user: { id: user.id, name: user.name, email: user.email }
+            user
         });
     } catch (error) {
         console.error(error);
@@ -73,7 +76,10 @@ exports.updateProfile = async (req, res) => {
             return res.status(400).json({ error: 'Name and email are required' });
         }
 
-        const existing = await prisma.user.findFirst({ where: { email, NOT: { id: userId } } });
+        const existing = await prisma.user.findFirst({ 
+            where: { email, NOT: { id: userId } },
+            select: { id: true }
+        });
         if (existing) return res.status(400).json({ error: 'Email already in use' });
 
         const user = await prisma.user.update({
@@ -93,15 +99,22 @@ exports.getProfileStats = async (req, res) => {
     try {
         const userId = req.user.userId;
 
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { id: true, name: true, email: true, createdAt: true, plan: true }
-        });
-
-        // Projects owned + shared
-        const [ownedProjects, sharedMemberships] = await Promise.all([
-            prisma.project.findMany({ where: { ownerId: userId }, select: { id: true, name: true, domain: true, createdAt: true } }),
-            prisma.projectMember.findMany({ where: { userId }, include: { project: { select: { id: true, name: true, domain: true, createdAt: true } } } }),
+        const [user, ownedProjects, sharedMemberships] = await Promise.all([
+            prisma.user.findUnique({
+                where: { id: userId },
+                select: { id: true, name: true, email: true, createdAt: true, plan: true }
+            }),
+            prisma.project.findMany({ 
+                where: { ownerId: userId }, 
+                select: { id: true, name: true, domain: true, createdAt: true } 
+            }),
+            prisma.projectMember.findMany({ 
+                where: { userId }, 
+                select: { 
+                    projectId: true, 
+                    project: { select: { id: true, name: true, domain: true, createdAt: true } } 
+                } 
+            }),
         ]);
 
         const allProjectIds = [
@@ -109,78 +122,99 @@ exports.getProfileStats = async (req, res) => {
             ...sharedMemberships.map(m => m.projectId),
         ];
 
-        // Bug stats across all accessible projects
-        const [totalBugs, openBugs, resolvedBugs, closedBugs, inProgressBugs] = await Promise.all([
-            prisma.bug.count({ where: { projectId: { in: allProjectIds } } }),
-            prisma.bug.count({ where: { projectId: { in: allProjectIds }, status: 'Open' } }),
-            prisma.bug.count({ where: { projectId: { in: allProjectIds }, status: 'Resolved' } }),
-            prisma.bug.count({ where: { projectId: { in: allProjectIds }, status: 'Closed' } }),
-            prisma.bug.count({ where: { projectId: { in: allProjectIds }, status: 'In Progress' } }),
+        // Optimized batch stats using groupBy
+        const [bugSummary, userActivities, statusChangesCount, commentsCount] = await Promise.all([
+            // Counts per project and per status in one go
+            prisma.bug.groupBy({
+                by: ['projectId', 'status'],
+                where: { projectId: { in: allProjectIds } },
+                _count: { id: true }
+            }),
+            // Recent activity limited
+            prisma.bugStatusHistory.findMany({
+                where: { userId },
+                orderBy: { changedAt: 'desc' },
+                take: 5,
+                select: {
+                    id: true,
+                    fromStatus: true,
+                    toStatus: true,
+                    changedAt: true,
+                    bug: { select: { id: true, title: true } }
+                }
+            }),
+            // Specific user counts
+            prisma.bugStatusHistory.count({ where: { userId } }),
+            prisma.comment.count({ where: { userId } })
         ]);
 
-        // Status changes made by this user
-        const statusChanges = await prisma.bugStatusHistory.count({ where: { userId } });
-        const resolvedByUser = await prisma.bugStatusHistory.count({ where: { userId, toStatus: 'Resolved' } });
+        // Process bugSummary efficiently in-memory
+        const projectMap = {};
+        const globalStats = { total: 0, open: 0, resolved: 0, closed: 0, inProgress: 0 };
 
-        // Comments made by this user
-        const commentsMade = await prisma.comment.count({ where: { userId } });
+        bugSummary.forEach(group => {
+            const pid = group.projectId;
+            const status = group.status;
+            const count = group._count.id;
 
-        // Recent activity by this user
-        const recentActivity = await prisma.bugStatusHistory.findMany({
-            where: { userId },
-            orderBy: { changedAt: 'desc' },
-            take: 5,
-            include: { bug: { select: { id: true, title: true } } }
+            if (!projectMap[pid]) projectMap[pid] = { total: 0, open: 0, resolved: 0 };
+            projectMap[pid].total += count;
+            if (status === 'Open') projectMap[pid].open = count;
+            if (status === 'Resolved') projectMap[pid].resolved = count;
+
+            globalStats.total += count;
+            if (status === 'Open') globalStats.open += count;
+            if (status === 'Resolved') globalStats.resolved += count;
+            if (status === 'Closed') globalStats.closed += count;
+            if (status === 'In Progress') globalStats.inProgress += count;
         });
 
-        // Per-project bug breakdown
-        const projectBreakdown = await Promise.all(
-            ownedProjects.map(async (p) => {
-                const [total, open, resolved] = await Promise.all([
-                    prisma.bug.count({ where: { projectId: p.id } }),
-                    prisma.bug.count({ where: { projectId: p.id, status: 'Open' } }),
-                    prisma.bug.count({ where: { projectId: p.id, status: 'Resolved' } }),
-                ]);
-                return { ...p, total, open, resolved, isOwner: true };
-            })
-        );
-        const sharedBreakdown = await Promise.all(
-            sharedMemberships.map(async (m) => {
-                const p = m.project;
-                const [total, open, resolved] = await Promise.all([
-                    prisma.bug.count({ where: { projectId: p.id } }),
-                    prisma.bug.count({ where: { projectId: p.id, status: 'Open' } }),
-                    prisma.bug.count({ where: { projectId: p.id, status: 'Resolved' } }),
-                ]);
-                return { ...p, total, open, resolved, isOwner: false };
-            })
-        );
+        const projectBreakdown = ownedProjects.map(p => ({
+            ...p,
+            isOwner: true,
+            total: projectMap[p.id]?.total || 0,
+            open: projectMap[p.id]?.open || 0,
+            resolved: projectMap[p.id]?.resolved || 0
+        }));
 
-        const resolutionRate = totalBugs > 0 ? Math.round(((resolvedBugs + closedBugs) / totalBugs) * 100) : 0;
+        const sharedBreakdown = sharedMemberships.map(m => ({
+            ...m.project,
+            isOwner: false,
+            total: projectMap[m.projectId]?.total || 0,
+            open: projectMap[m.projectId]?.open || 0,
+            resolved: projectMap[m.projectId]?.resolved || 0
+        }));
+
+        const resolutionRate = globalStats.total > 0 
+            ? Math.round(((globalStats.resolved + globalStats.closed) / globalStats.total) * 100) 
+            : 0;
 
         const PLAN_LIMITS = require('../config/plans');
         const planName = user.plan || 'free';
         
-        // Trial calculation
-        const createdAt = new Date(user.createdAt);
-        const now = new Date();
-        const diffTime = now - createdAt;
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const diffDays = Math.floor((new Date().getTime() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24));
         const trialDaysRemaining = Math.max(0, 14 - diffDays);
         const isTrialExpired = planName === 'free' && diffDays >= 14;
 
+        res.setHeader('Cache-Control', 's-maxage=1, stale-while-revalidate=59');
         res.json({
             user,
-            stats: { totalBugs, openBugs, resolvedBugs, closedBugs, inProgressBugs, statusChanges, resolvedByUser, commentsMade, resolutionRate },
+            stats: { 
+                totalBugs: globalStats.total, 
+                openBugs: globalStats.open, 
+                resolvedBugs: globalStats.resolved, 
+                closedBugs: globalStats.closed, 
+                inProgressBugs: globalStats.inProgress, 
+                statusChanges: statusChangesCount, 
+                commentsMade: commentsCount, 
+                resolutionRate 
+            },
             projects: [...projectBreakdown, ...sharedBreakdown],
-            recentActivity,
+            recentActivity: userActivities,
             plan: {
               name: planName,
               limits: PLAN_LIMITS[planName],
-              trial: {
-                isExpired: isTrialExpired,
-                daysRemaining: trialDaysRemaining,
-              }
+              trial: { isExpired: isTrialExpired, daysRemaining: trialDaysRemaining }
             }
         });
     } catch (error) {

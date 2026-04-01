@@ -1,8 +1,7 @@
 const Razorpay = require('razorpay');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/db');
 const crypto = require('crypto');
 
-const prisma = new PrismaClient();
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -20,16 +19,11 @@ exports.createSubscription = async (req, res) => {
     const userId = req.user.userId;
     const PLAN_IDS = getPlanIds();
 
-    console.log(`[Razorpay] createSubscription request for plan: "${plan}"`);
-    console.log(`[Razorpay] Current PLAN_IDS mapping:`, PLAN_IDS);
-
     if (!PLAN_IDS[plan]) {
-      console.error(`[Razorpay] Invalid plan name: "${plan}". Map keys: ${Object.keys(PLAN_IDS).join(', ')}`);
       return res.status(400).json({ error: `Invalid plan selected: ${plan}` });
     }
 
     const planId = PLAN_IDS[plan];
-    console.log(`[Razorpay] Initiating subscription for planId: ${planId}`);
 
     const subscription = await razorpay.subscriptions.create({
       plan_id: planId,
@@ -95,7 +89,7 @@ exports.verifyPayment = async (req, res) => {
         data: {
           userId: userId,
           razorpayPaymentId: razorpay_payment_id,
-          amount: rzpSubscription.charge_at ? 0 : 0, // In true subscription, first payment might be different
+          amount: 0, 
           status: 'captured',
         }
       })
@@ -111,17 +105,19 @@ exports.verifyPayment = async (req, res) => {
 exports.getSubscription = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const subscription = await prisma.subscription.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
-    
-    const user = await prisma.user.findUnique({
+    const [subscription, user] = await Promise.all([
+      prisma.subscription.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, plan: true, status: true, currentPeriodEnd: true, razorpaySubscriptionId: true }
+      }),
+      prisma.user.findUnique({
         where: { id: userId },
         select: { plan: true }
-    });
+      })
+    ]);
 
-    res.json({ subscription, plan: user.plan });
+    res.json({ subscription, plan: user?.plan || 'free' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch subscription' });
   }
@@ -129,8 +125,11 @@ exports.getSubscription = async (req, res) => {
 
 exports.cancelSubscription = async (req, res) => {
   try {
+    const { subscriptionId } = req.body;
     const userId = req.user.userId;
     
+    if (!subscriptionId) return res.status(400).json({ error: 'Subscription ID is required' });
+
     await razorpay.subscriptions.cancel(subscriptionId);
     
     await prisma.$transaction([
@@ -146,6 +145,7 @@ exports.cancelSubscription = async (req, res) => {
 
     res.json({ message: 'Subscription cancelled successfully' });
   } catch (error) {
+    console.error('Razorpay Cancel Error:', error);
     res.status(500).json({ error: 'Failed to cancel subscription' });
   }
 };
@@ -156,6 +156,7 @@ exports.getPaymentHistory = async (req, res) => {
     const payments = await prisma.payment.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+      select: { id: true, razorpayPaymentId: true, amount: true, status: true, createdAt: true }
     });
     res.json({ payments });
   } catch (error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Bug, CheckCircle, Clock, FolderKanban, AlertCircle, ArrowRight, MoreVertical } from 'lucide-react';
@@ -32,10 +32,10 @@ interface Stats {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  'open':        'bg-amber-50 text-amber-700 ring-amber-600/20',
+  'open': 'bg-amber-50 text-amber-700 ring-amber-600/20',
   'in progress': 'bg-blue-50 text-blue-700 ring-blue-600/20',
-  'resolved':    'bg-green-50 text-green-700 ring-green-600/20',
-  'closed':      'bg-gray-50 text-gray-600 ring-gray-500/10',
+  'resolved': 'bg-green-50 text-green-700 ring-green-600/20',
+  'closed': 'bg-gray-50 text-gray-600 ring-gray-500/10',
 };
 
 function timeAgo(dateString: string) {
@@ -50,64 +50,75 @@ function timeAgo(dateString: string) {
 
 export default function DashboardHome() {
   const router = useRouter();
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    api.get('/projects/stats')
-      .then(res => setStats(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: stats, isLoading } = useQuery<Stats>({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const res = await api.get('/projects/stats');
+      return res.data;
+    },
+  });
 
   const statCards = stats ? [
-    { 
-      name: 'Total Bugs',   
-      value: stats.total.toLocaleString(),      
-      icon: Bug,          
-      color: 'text-blue-600', 
+    {
+      name: 'Total Bugs',
+      value: stats.total.toLocaleString(),
+      icon: Bug,
+      color: 'text-blue-600',
       bg: 'bg-blue-50'
     },
-    { 
-      name: 'Open',         
-      value: stats.open.toLocaleString(),        
-      icon: AlertCircle,  
-      color: 'text-purple-600', 
+    {
+      name: 'Open',
+      value: stats.open.toLocaleString(),
+      icon: AlertCircle,
+      color: 'text-purple-600',
       bg: 'bg-purple-50'
     },
-    { 
-      name: 'In Progress',  
-      value: stats.inProgress.toLocaleString(),  
-      icon: Clock,        
-      color: 'text-indigo-600', 
+    {
+      name: 'In Progress',
+      value: stats.inProgress.toLocaleString(),
+      icon: Clock,
+      color: 'text-indigo-600',
       bg: 'bg-indigo-50'
     },
-    { 
-      name: 'Resolved',     
-      value: stats.resolved.toLocaleString(),    
-      icon: CheckCircle,  
-      color: 'text-emerald-600', 
+    {
+      name: 'Resolved',
+      value: stats.resolved.toLocaleString(),
+      icon: CheckCircle,
+      color: 'text-emerald-600',
       bg: 'bg-emerald-100/50'
     },
   ] : [];
 
-  if (loading) return <DashboardShimmer />;
+  if (isLoading || !stats) return <DashboardShimmer />;
 
   return (
     <div className="space-y-8 pb-8">
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {statCards.map((stat) => (
-          <div key={stat.name} className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/60 p-4 flex flex-col h-32 sm:h-32 justify-between group hover:shadow-md transition-all">
-            <div className="flex items-start justify-between">
-              <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} dark:bg-gray-800`}>
+          <div key={stat.name} className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/60 p-4 flex flex-col justify-between group hover:shadow-md transition-all">
+            <div className="flex">
+              <div className={`p-4 rounded-xl ${stat.bg} ${stat.color} dark:bg-gray-800`}>
                 <stat.icon className="h-6 w-6" />
               </div>
+              <div className="ml-4 hidden sm:block">
+                <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-2">
+                  {stat.name}
+                </p>
+                <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white leading-none mb-4">
+                  {stat.value}
+                </p>
+              </div>
             </div>
-            
-            <div>
-              <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-2">{stat.name}</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white leading-none mb-4">{stat.value}</p>
+
+            <div className="sm:hidden">
+              <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-2">
+                {stat.name}
+              </p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white leading-none">
+                {stat.value}
+              </p>
             </div>
           </div>
         ))}
@@ -122,7 +133,7 @@ export default function DashboardHome() {
               View All
             </Link>
           </div>
-          
+
           <div className="mt-3 mb-3 flex flex-col gap-4">
             {!stats?.recentBugs.length ? (
               <p className="text-center py-12 text-gray-500 italic text-sm">No bug reports yet.</p>
@@ -131,15 +142,15 @@ export default function DashboardHome() {
                 const status = bug.status.toLowerCase();
                 const isResolved = status === 'resolved' || status === 'closed';
                 const isOpen = status === 'open';
-                
+
                 const dotColor = isResolved ? 'bg-emerald-500' : isOpen ? 'bg-rose-600' : 'bg-indigo-500';
                 const pillColor = isResolved ? 'bg-emerald-100 text-emerald-700' : isOpen ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700';
                 const textColor = isResolved ? 'text-emerald-600' : isOpen ? 'text-rose-600' : 'text-indigo-600';
-                
+
                 return (
-                  <div 
-                    key={bug.id} 
-                    onClick={() => router.push(`/dashboard/bugs/${bug.id}`)} 
+                  <div
+                    key={bug.id}
+                    onClick={() => router.push(`/dashboard/bugs/${bug.id}`)}
                     className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-200 dark:border-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer flex flex-col group mx-3"
                   >
                     {/* Header */}
@@ -190,13 +201,13 @@ export default function DashboardHome() {
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Active Projects</h2>
               <button className="text-gray-400 hover:text-gray-600"><MoreVertical className="h-4 w-4" /></button>
             </div>
-            
+
             <div className="space-y-4">
               {!stats?.projects.length ? (
                 <p className="text-center py-8 text-gray-400 italic text-sm">No projects found.</p>
               ) : (
                 stats.projects.map((project: Project) => (
-                  <Link 
+                  <Link
                     key={project.id}
                     href={`/dashboard/bugs?project=${project.id}`}
                     className="flex items-center justify-between p-3 rounded-xl border border-gray-50 dark:border-gray-800 hover:border-blue-100 dark:hover:border-blue-900/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/5 transition-all group"

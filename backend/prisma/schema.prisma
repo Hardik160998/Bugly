@@ -73,6 +73,7 @@ model ProjectMember {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([projectId, userId])
+  @@index([userId])
 }
 
 model Bug {
@@ -95,6 +96,9 @@ model Bug {
   comments    Comment[]
   attachments Attachment[]
   statusHistory BugStatusHistory[]
+
+  @@index([projectId, status])
+  @@index([projectId, createdAt])
 }
 
 model Comment {
@@ -106,6 +110,9 @@ model Comment {
 
   bug       Bug      @relation(fields: [bugId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+
+  @@index([bugId])
+  @@index([userId])
 }
 
 model Attachment {
@@ -114,6 +121,8 @@ model Attachment {
   fileUrl   String
 
   bug       Bug      @relation(fields: [bugId], references: [id])
+
+  @@index([bugId])
 }
 
 model BugStatusHistory {
@@ -126,4 +135,6 @@ model BugStatusHistory {
 
   bug        Bug      @relation(fields: [bugId], references: [id])
   user       User     @relation(fields: [userId], references: [id])
+
+  @@index([bugId])
 }

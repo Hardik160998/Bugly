@@ -1,6 +1,6 @@
-"use client";
-
 import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useDebounce } from '@/hooks/useDebounce';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { BugListShimmer } from '@/components/ui/Shimmer';
@@ -33,54 +33,70 @@ const TAB_ACTIVE: Record<string, string> = {
 export default function BugsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
-  const [bugs, setBugs] = useState<BugReport[]>([]);
-  const [loading, setLoading] = useState(false);
   const [activeStatus, setActiveStatus] = useState('Open');
   const [search, setSearch] = useState('');
-  const [plan, setPlan] = useState<any>(null);
+  const debouncedSearch = useDebounce(search, 300);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
 
+  // Fetch Projects and Plan
+  const { data: initData, isLoading: isInitializing } = useQuery({
+    queryKey: ['bugs-init-data'],
+    queryFn: async () => {
+      const [pRes, sRes] = await Promise.all([
+        api.get('/projects'),
+        api.get('/auth/profile/stats')
+      ]);
+      return { projects: pRes.data, plan: sRes.data.plan };
+    },
+  });
+
+  const projects = initData?.projects || [];
+  const plan = initData?.plan || null;
+
+  // Set initial project ID once projects are loaded
   useEffect(() => {
-    Promise.all([
-      api.get('/projects'),
-      api.get('/auth/profile/stats')
-    ]).then(([pRes, sRes]) => {
-      setProjects(pRes.data);
-      setPlan(sRes.data.plan);
-      
-      if (sRes.data.plan.trial.isExpired) {
-        setShowUpgradeModal(true);
-      }
-
+    if (projects.length > 0 && !selectedProjectId) {
       const fromQuery = searchParams.get('project');
-      const match = pRes.data.find((p: Project) => p.id === fromQuery);
-      setSelectedProjectId(match ? match.id : pRes.data[0]?.id ?? '');
-    }).catch(console.error).finally(() => setIsInitializing(false));
-  }, []);
+      const match = projects.find((p: Project) => p.id === fromQuery);
+      setSelectedProjectId(match ? match.id : projects[0].id);
+    }
+  }, [projects, selectedProjectId, searchParams]);
 
+  // Handle auto-show upgrade modal
   useEffect(() => {
-    if (!selectedProjectId) return;
-    setLoading(true);
-    api.get(`/projects/${selectedProjectId}/bugs`)
-      .then(res => setBugs(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [selectedProjectId]);
+    if (plan?.trial.isExpired) {
+      setShowUpgradeModal(true);
+    }
+  }, [plan]);
+
+  // Fetch Bugs for selected project
+  const { data: bugsData, isLoading: isBugsLoading } = useQuery({
+    queryKey: ['project-bugs', selectedProjectId],
+    queryFn: async () => {
+      if (!selectedProjectId) return { bugs: [] };
+      const res = await api.get(`/projects/${selectedProjectId}/bugs`);
+      // Since backend is now paginated, but frontend isn't fully ready for it, 
+      // handle either array or paginated object for compatibility
+      return Array.isArray(res.data) ? { bugs: res.data } : res.data;
+    },
+    enabled: !!selectedProjectId,
+  });
+
+  const bugs = bugsData?.bugs || [];
+  const loading = isInitializing || isBugsLoading;
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { All: bugs.length };
-    STATUSES.slice(1).forEach(s => { c[s] = bugs.filter(b => b.status === s).length; });
+    STATUSES.slice(1).forEach(s => { c[s] = bugs.filter((b: BugReport) => b.status === s).length; });
     return c;
   }, [bugs]);
 
-  const filtered = useMemo(() => bugs.filter(b => {
+  const filtered = useMemo(() => bugs.filter((b: BugReport) => {
     const matchStatus = activeStatus === 'All' || b.status === activeStatus;
-    const matchSearch = !search.trim() || b.title.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !debouncedSearch.trim() || b.title.toLowerCase().includes(debouncedSearch.toLowerCase());
     return matchStatus && matchSearch;
-  }), [bugs, activeStatus, search]);
+  }), [bugs, activeStatus, debouncedSearch]);
 
   return (
     <div className="space-y-6 flex flex-col h-full">
@@ -97,7 +113,7 @@ export default function BugsPage() {
             ? [{ value: '', label: 'Loading projects...' }]
             : projects.length === 0
               ? [{ value: '', label: 'No projects' }]
-              : projects.map(p => ({ value: p.id, label: p.name }))
+              : projects.map((p: Project) => ({ value: p.id, label: p.name }))
           }
           className="w-full sm:w-auto"
         />
@@ -195,7 +211,7 @@ export default function BugsPage() {
               </div>
               <h3 className="text-base font-semibold text-gray-900 dark:text-white">No bugs reported yet</h3>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-                {projects.find(p => p.id === selectedProjectId)?.name ?? 'This project'} is all clear.
+                {projects.find((p: Project) => p.id === selectedProjectId)?.name ?? 'This project'} is all clear.
                 Install the widget on your site to start collecting bug reports.
               </p>
               <Link
@@ -215,7 +231,7 @@ export default function BugsPage() {
             </div>
           ) : (
             <ul role="list" className="divide-y divide-gray-100 dark:divide-gray-800">
-              {filtered.map(bug => (
+              {filtered.map((bug: BugReport) => (
                 <li key={bug.id} className="relative flex justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 dark:hover:bg-gray-800/50 sm:px-6 transition-colors cursor-pointer">
                   <div className="flex min-w-0 gap-x-4 items-center">
                     <div className="h-10 w-10 flex-none rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
