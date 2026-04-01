@@ -99,14 +99,14 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           <Menu className="h-5 w-5" />
         </button>
 
-        <div className="relative w-full max-w-sm hidden sm:block group">
+        <div className="relative w-full max-w-md hidden sm:block">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-            <Search className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-brand-600 transition-colors" />
+            <Search className="h-4 w-4 text-gray-400" />
           </div>
           <input
             type="text"
-            placeholder="SYSTEM SEARCH..."
-            className="block w-full rounded-2xl border border-gray-100 dark:border-gray-800/60 py-2.5 pl-11 pr-3 text-gray-900 dark:text-white bg-gray-50/30 dark:bg-gray-900/40 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-500/20 focus:border-brand-500/50 sm:text-[10px] font-black uppercase tracking-widest transition-all"
+            placeholder="Search dashboard..."
+            className="block w-full rounded-2xl border-0 py-2.5 pl-11 pr-3 text-gray-900 dark:text-white bg-gray-50/50 dark:bg-gray-900/50 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-500 sm:text-xs font-medium transition-all"
           />
         </div>
       </div>
@@ -195,16 +195,16 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => setProfileOpen(!profileOpen)}
-            className="flex items-center gap-3 rounded-2xl p-1.5 pr-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all border border-gray-50/50 dark:border-gray-800/40 hover:shadow-premium group"
+            className="flex items-center gap-2 rounded-2xl p-1 pr-3 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-800"
           >
-            <div className="h-8 w-8 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm group-hover:scale-105 transition-transform">
-              <img src={`https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=111827&color=ffffff&bold=true`} alt="avatar" />
+            <div className="h-9 w-9 rounded-xl overflow-hidden border-2 border-white dark:border-gray-700 shadow-premium group-hover:scale-105 transition-transform">
+              <img src={`https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=3758ff&color=ffffff&bold=true`} alt="avatar" />
             </div>
-            <div className="hidden md:block text-left">
-              <p className="text-[10px] font-black text-gray-900 dark:text-white leading-none uppercase tracking-tight">{user?.name || 'User'}</p>
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-0.5">{user?.plan || 'Free'} Node</p>
+            <div className="hidden md:block text-left ml-1">
+              <p className="text-xs font-bold text-gray-900 dark:text-white leading-none mb-0.5">{user?.name || 'User'}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{user?.plan || 'Free'}</p>
             </div>
-            <ChevronDown className={`h-3.5 w-3.5 text-gray-400 transition-transform duration-500 ${profileOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {profileOpen && (
