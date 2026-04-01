@@ -196,7 +196,7 @@ export default function DashboardHome() {
 
         {/* Active Projects - 4 cols */}
         <div className="lg:col-span-4 flex flex-col space-y-6">
-          <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/60 p-6 shadow-sm overflow-hidden flex-1">
+          <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/60 p-6 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Active Projects</h2>
               <button className="text-gray-400 hover:text-gray-600"><MoreVertical className="h-4 w-4" /></button>
