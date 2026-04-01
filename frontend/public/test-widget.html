@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bugly Widget Test Client</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 2rem; background: #f3f4f6; color: #1f2937; }
+        .box { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-top: 2rem; }
+        button { background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>My SaaS Application</h1>
+    <p>This is a test webpage to verify the Bugly embeddable widget works correctly over the DOM.</p>
+    
+    <div class="box">
+        <h2>Pricing Table</h2>
+        <p>Uh oh, something might be broken in this component. Try using the bug reporter on the bottom right!</p>
+        <button onclick="alert('Component action clicked!')">Action</button>
+    </div>
+
+    <!-- Configure variables for the widget test -->
+    <script>
+        // Use a dummy project ID that matches local DB if possible (we will patch this later or rely on errors to fix it)
+        window.BUGLY_PROJECT_ID = 'bad3f746-479e-42f6-bbc2-b93ef4622994';
+        window.BUGLY_API_URL = 'https://bugly-backend.vercel.app/api';
+    </script>
+    <script src="./widget.js"></script>
+</body>
+</html>
